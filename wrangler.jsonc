@@ -1,0 +1,19 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "formzero",
+	"compatibility_date": "2025-04-04",
+	"compatibility_flags": [
+        "nodejs_compat"
+    ],
+	"main": "./workers/app.ts",
+	"observability": {
+		"enabled": true
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "formzero",
+			"database_id": "4a765081-eab0-424f-984b-e9b638a16de4",
+		}
+	]
+}
