@@ -1,5 +1,15 @@
 import type { Route } from "./+types/forms.$formId"
-import { Outlet, redirect, useLoaderData, useLocation, useParams } from "react-router";
+import * as React from "react"
+import { Database, Plus, Puzzle } from "lucide-react"
+import {
+  Link,
+  Outlet,
+  redirect,
+  useFetcher,
+  useLoaderData,
+  useLocation,
+  useParams,
+} from "react-router";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -8,6 +18,17 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "#/components/ui/breadcrumb"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "#/components/ui/dialog"
+import { Button } from "#/components/ui/button"
+import { Input } from "#/components/ui/input"
+import { Label } from "#/components/ui/label"
 import { Separator } from "#/components/ui/separator"
 import {
   SidebarTrigger,
@@ -17,8 +38,8 @@ import { requireAuth } from "~/lib/require-auth.server";
 
 export const meta: Route.MetaFunction = () => {
   return [
-    { title: `Form | FormZero` },
-    { name: "description", content: "Manage your form submissions" },
+    { title: `表单 | FormZero` },
+    { name: "description", content: "管理您的表单提交数据" },
   ];
 };
 
@@ -48,45 +69,116 @@ export async function loader({ context, params, request }: Route.LoaderArgs) {
 export default function FormLayout() {
   const params = useParams()
   const loaderData = useLoaderData<typeof loader>()
+  const fetcher = useFetcher<{ error?: string }>()
+
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false)
 
   const location = useLocation()
 
   const pathSegments = location.pathname.split("/").filter(Boolean)
   const currentPage = pathSegments[pathSegments.length - 1];
-  const pageTitle = currentPage.charAt(0).toUpperCase() + currentPage.slice(1)
+  const pageTitleMap: Record<string, string> = {
+    submissions: "提交数据",
+    integration: "集成",
+    dashboard: "仪表盘",
+  }
+  const pageTitle = pageTitleMap[currentPage] || (currentPage.charAt(0).toUpperCase() + currentPage.slice(1))
+  const currentFormActions = [
+    {
+      title: "提交数据",
+      url: `/forms/${params.formId}/submissions`,
+      icon: Database,
+    },
+    {
+      title: "集成",
+      url: `/forms/${params.formId}/integration`,
+      icon: Puzzle,
+    },
+  ]
 
-  return (<>
-    <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-      <div className="flex items-center gap-2 px-4">
-        <SidebarTrigger className="-ml-1" />
-        <Separator
-          orientation="vertical"
-          className="mr-2 data-[orientation=vertical]:h-4"
-        />
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem className="hidden md:block">
-              <BreadcrumbLink href="/">
-                FormZero
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator className="hidden md:block" />
-            <BreadcrumbItem className="hidden md:block">
-              <BreadcrumbLink href={`/forms/${params.formId}/submissions`}>
-                {loaderData.form.name}
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator className="hidden md:block" />
-            <BreadcrumbItem>
-              <BreadcrumbPage>{pageTitle}</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
+  return (
+    <>
+      <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+        <div className="flex flex-1 items-center justify-between gap-2 px-4">
+          <div className="flex items-center gap-2 min-w-0">
+            <SidebarTrigger className="-ml-1" />
+            <Separator
+              orientation="vertical"
+              className="mr-2 data-[orientation=vertical]:h-4"
+            />
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem className="hidden md:block">
+                  <BreadcrumbLink href="/">FormZero</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbItem className="hidden md:block">
+                  <BreadcrumbLink href={`/forms/${params.formId}/submissions`}>
+                    {loaderData.form.name}
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{pageTitle}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {currentFormActions.map((action) => (
+              <Button
+                key={action.title}
+                type="button"
+                variant={location.pathname === action.url ? "secondary" : "outline"}
+                size="sm"
+                asChild
+              >
+                <Link to={action.url}>
+                  <action.icon />
+                  {action.title}
+                </Link>
+              </Button>
+            ))}
+            <Button type="button" onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus />
+              新建表单
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>新建表单</DialogTitle>
+            <DialogDescription>创建新表单开始收集提交数据。</DialogDescription>
+          </DialogHeader>
+          <fetcher.Form method="post" action="/forms">
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="name">表单名称</Label>
+                <Input id="name" name="name" placeholder="联系表单" required />
+                {fetcher.data && "error" in fetcher.data && (
+                  <p className="text-sm text-destructive">{fetcher.data.error as string}</p>
+                )}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                取消
+              </Button>
+              <Button type="submit" disabled={fetcher.state === "submitting"}>
+                {fetcher.state === "submitting" ? "创建中..." : "创建表单"}
+              </Button>
+            </DialogFooter>
+          </fetcher.Form>
+        </DialogContent>
+      </Dialog>
+
+      <div className="flex flex-1 flex-col gap-4 p-4 pt-0 min-w-0">
+        <Outlet />
       </div>
-    </header>
-    <div className="flex flex-1 flex-col gap-4 p-4 pt-0 min-w-0">
-      <Outlet />
-    </div>
-  </>
+    </>
   )
 }

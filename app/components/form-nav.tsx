@@ -1,31 +1,26 @@
-import { Database, Puzzle, LayoutDashboard } from "lucide-react"
-import { NavLink, useParams } from "react-router"
+import { FileText, LayoutDashboard, MailPlus, ShieldAlert } from "lucide-react"
+import { NavLink, useLocation, useParams } from "react-router"
+import type { Form } from "#/types/form"
 
 import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "#/components/ui/sidebar"
 
-export function FormNav() {
-  const params = useParams()
-  const formId = params.formId
+type FormNavProps = {
+  forms: (Form & { submission_count?: number; unread_count?: number })[]
+  spamCount?: number
+}
 
-  const formItems = formId ? [
-    {
-      title: "Submissions",
-      url: `/forms/${formId}/submissions`,
-      icon: Database,
-    },
-    {
-      title: "Integration",
-      url: `/forms/${formId}/integration`,
-      icon: Puzzle,
-    },
-  ] : []
+export function FormNav({ forms, spamCount = 0 }: FormNavProps) {
+  const params = useParams()
+  const location = useLocation()
+  const formId = params.formId
 
   return (
     <>
@@ -33,35 +28,57 @@ export function FormNav() {
         <SidebarGroupContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild>
+              <SidebarMenuButton asChild isActive={location.pathname === "/forms/dashboard"}>
                 <NavLink to="/forms/dashboard">
                   <LayoutDashboard />
-                  <span>Dashboard</span>
+                  <span>仪表盘</span>
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={location.pathname === "/forms/spam"}>
+                <NavLink to="/forms/spam">
+                  <ShieldAlert />
+                  <span>Spam</span>
+                </NavLink>
+              </SidebarMenuButton>
+              {spamCount > 0 ? (
+                <SidebarMenuBadge>{spamCount}</SidebarMenuBadge>
+              ) : null}
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={location.pathname === "/editor"}>
+                <NavLink to="/editor">
+                  <MailPlus />
+                  <span>邮件编辑器</span>
                 </NavLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
-      {formItems.length > 0 && (
-        <SidebarGroup>
-          <SidebarGroupLabel>Current Form</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {formItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      )}
+      <SidebarGroup>
+        <SidebarGroupLabel>表单列表</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {forms.map((form) => (
+              <SidebarMenuItem key={form.id}>
+                <SidebarMenuButton asChild isActive={formId === form.id}>
+                  <NavLink to={`/forms/${form.id}/submissions`}>
+                    <FileText />
+                    <span>{form.name}</span>
+                  </NavLink>
+                </SidebarMenuButton>
+                {form.unread_count ? (
+                  <SidebarMenuBadge className="bg-blue-500 text-white">{form.unread_count}</SidebarMenuBadge>
+                ) : form.submission_count !== undefined ? (
+                  <SidebarMenuBadge>{form.submission_count}</SidebarMenuBadge>
+                ) : null}
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
     </>
   )
 }

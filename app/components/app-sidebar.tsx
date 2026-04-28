@@ -1,36 +1,28 @@
 import { useState, useEffect } from "react"
 import type { Form } from "#/types/form"
 import type { User } from "#/types/user"
-import { FormSwitcher } from "#/components/form-switcher"
 import { FormNav } from "#/components/form-nav"
-import { LogOut, MoreHorizontal, Settings } from "lucide-react"
+import { LogOut, Settings } from "lucide-react"
 import { useFetcher } from "react-router"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarRail,
 } from "#/components/ui/sidebar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "#/components/ui/dropdown-menu"
 import { SettingsDialog } from "#/components/settings-dialog"
 import type { Settings as SettingsType } from "#/types/settings"
 
 type AppSidebarProps = {
   forms: Form[]
   user: User
+  spamCount?: number
 } & React.ComponentProps<typeof Sidebar>
 
-export function AppSidebar({ forms, user, ...props }: AppSidebarProps) {
-  const userInitial = user.name.charAt(0).toUpperCase()
+export function AppSidebar({ forms, user, spamCount = 0, ...props }: AppSidebarProps) {
   const fetcher = useFetcher()
   const settingsFetcher = useFetcher()
 
@@ -55,46 +47,36 @@ export function AppSidebar({ forms, user, ...props }: AppSidebarProps) {
     fetcher.submit(null, { method: "post", action: "/logout" })
   }
 
+  void user
+
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
-        <FormSwitcher forms={forms} />
-      </SidebarHeader>
       <SidebarContent>
-        <FormNav />
+        <FormNav forms={forms} spamCount={spamCount} />
       </SidebarContent>
       <SidebarFooter>
-        <SidebarMenu>
+        <SidebarMenu className="grid grid-cols-2 gap-2 group-data-[collapsible=icon]:grid-cols-1">
           <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton size="lg">
-                  <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg font-semibold">
-                    {userInitial}
-                  </div>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">{user.name}</span>
-                    <span className="truncate text-xs text-muted-foreground">{user.email}</span>
-                  </div>
-                  <MoreHorizontal className="ml-auto size-4" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-                side="bottom"
-                align="end"
-                sideOffset={4}
-              >
-                <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
-                  <Settings />
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleLogout}>
-                  <LogOut />
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <SidebarMenuButton
+              size="default"
+              tooltip="设置"
+              onClick={() => setSettingsOpen(true)}
+              className="justify-center"
+            >
+              <Settings />
+              <span className="font-medium">设置</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              size="default"
+              tooltip="退出登录"
+              onClick={handleLogout}
+              className="justify-center"
+            >
+              <LogOut />
+              <span className="font-medium">退出登录</span>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
